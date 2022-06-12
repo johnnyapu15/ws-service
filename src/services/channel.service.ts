@@ -14,21 +14,29 @@ export default class ChannelService {
         ]
     );
 
-    public isInitAsync() {
-        const got = Promise.all([coordinator.exists(CoordinatorPaths.SERVER_PATH), coordinator.exists(CoordinatorPaths.CHANNEL_PATH)]);
-        return got
+    public async isInitAsync() {
+        const got = await Promise.all([
+            coordinator.exists(CoordinatorPaths.SERVER_PATH)
+            , coordinator.exists(CoordinatorPaths.CHANNEL_PATH)
+            , coordinator.exists(CoordinatorPaths.CURRENT_TOTAL_CONNECTIONS(PUBLIC_HOSTNAME))
+            , coordinator.exists(CoordinatorPaths.CURRENT_TOTAL_QUEUED_CONNECTIONS(PUBLIC_HOSTNAME))
+        ]);
+        let ret = true;
+        for (let e of got) {
+            ret &&= (e != undefined);
+        }
+        return ret
 
     }
 
-    public async CreateChannelAsync(channelId: string) {
-
+    public async createChannelAsync(channelId: string) {
         const got = await coordinator.transaction()
             .create(CoordinatorPaths.AVAILABLE_CHANNELS(channelId), ToBuffer(PUBLIC_HOSTNAME), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL)
             .create(CoordinatorPaths.CURRENT_CHANNEL_CONNECTIONS(channelId), ToBuffer(0), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL)
             .create(CoordinatorPaths.CURRENT_CHANNEL_QUEUED_CONNECTIONS(channelId), ToBuffer(0), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL)
             .commit();
 
-        this.CheckTx(got, () => {
+        this.checkTx(got, () => {
             if (this.Cache.has(channelId)) {
                 this.Cache.delete(channelId);
             }
@@ -41,20 +49,21 @@ export default class ChannelService {
         return 'OK'
     };
 
-    public async GetChannelAsync(channelId: string) {
+    public async getChannelAsync(channelId: string) {
         const channelHostAsync = coordinator.getData(CoordinatorPaths.AVAILABLE_CHANNELS(channelId));
         const connectionAsync = coordinator.getData(CoordinatorPaths.CURRENT_CHANNEL_CONNECTIONS(channelId));
         const queuedAsync = coordinator.getData(CoordinatorPaths.CURRENT_CHANNEL_QUEUED_CONNECTIONS(channelId));
         const got = await Promise.all([channelHostAsync, connectionAsync, queuedAsync]);
 
         return {
+            channelId,
             channelHost: got[0].data.toString(),
             connections: parseInt(got[1].data.toString(), 10),
             queuedConnections: parseInt(got[2].data.toString(), 10)
-        };
+        } as Channel
     }
 
-    public async UpdateConnectionDeltaAsync(channelId: string, delta: number) {
+    public async updateConnectionDeltaAsync(channelId: string, delta: number) {
         const channel = this.Cache.get(channelId);
         if (!channel) throw new Error('invalid channel id');
         const nextValue = channel.connections + delta;
@@ -65,7 +74,7 @@ export default class ChannelService {
             .setData(CoordinatorPaths.CURRENT_TOTAL_CONNECTIONS(PUBLIC_HOSTNAME), ToBuffer(nextTotalValue))
             .commit();
 
-        this.CheckTx(got, () => {
+        this.checkTx(got, () => {
             channel.connections = nextValue;
             this.TOTAL_STAT.connections = nextTotalValue;
         })
@@ -73,7 +82,7 @@ export default class ChannelService {
         return channel;
     }
 
-    public async UpdateQueuedConnectionDeltaAsync(channelId: string, delta: number) {
+    public async updateQueuedConnectionDeltaAsync(channelId: string, delta: number) {
         const channel = this.Cache.get(channelId);
         if (!channel) throw new Error('invalid channel id');
         const nextValue = channel.queuedConnections + delta;
@@ -84,7 +93,7 @@ export default class ChannelService {
             .setData(CoordinatorPaths.CURRENT_TOTAL_QUEUED_CONNECTIONS(PUBLIC_HOSTNAME), ToBuffer(nextTotalValue))
             .commit();
 
-        this.CheckTx(got, () => {
+        this.checkTx(got, () => {
             channel.queuedConnections = nextValue;
             this.TOTAL_STAT.queuedConnections = nextTotalValue;
         })
@@ -92,8 +101,8 @@ export default class ChannelService {
         return channel;
     }
 
-
-    CheckTx(got: {
+    /** 트랜잭션 실행 결과에서 에러가 있는 지 확인하고, 없으면 콜백을 실행하는 메소드. */
+    checkTx(got: {
         header: {
             type: number
             done: boolean

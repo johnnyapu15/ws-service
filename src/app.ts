@@ -70,7 +70,6 @@ class App {
         ]
 
         await Promise.all(promises);
-        console.log('coordinator initiated.')
 
       } catch (e) {
         console.log(e)

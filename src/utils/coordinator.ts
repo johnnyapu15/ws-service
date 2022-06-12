@@ -83,6 +83,7 @@ const ServiceCoordinator = {
 
 interface Channel {
     channelId: string;
+    channelHost?: string;
     connections: number;
     queuedConnections: number;
 }
