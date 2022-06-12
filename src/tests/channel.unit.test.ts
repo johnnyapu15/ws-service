@@ -1,10 +1,9 @@
 
 import app from '../app'
-import ChannelService from '../services/channel.service';
+import WebsocketServerCoordinator from '../utils/websocketServer.coordinator';
 import { initiated } from '../utils/coordinator';
 const a = new app([])
-const service = new ChannelService;
-const coordinator = service.coordinator;
+const service = new WebsocketServerCoordinator;
 
 function sleep(ms) {
     return new Promise(
@@ -23,7 +22,7 @@ beforeAll(poll);
 
 const CHANNEL = 'testChannel';
 
-describe('test', () => {
+describe('[코디네이터] 테스트용 채널 정보 생성 및 확인', () => {
     test('초기화 테스트', async () => {
         const got = await service.isInitAsync();
         expect(got).toBe(true)

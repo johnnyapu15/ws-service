@@ -1,19 +1,33 @@
 import { PUBLIC_HOSTNAME } from "@/config";
-import { Channel, coordinator, CoordinatorPaths, CreateMode, ToBuffer, Ids } from "@/utils/coordinator";
-import { promisify } from "util";
+import { Channel, coordinator, CoordinatorPaths, CreateMode, ToBuffer, Ids, InitializeService } from "@/utils/coordinator";
 
-export default class ChannelService {
-    coordinator = coordinator
-    TOTAL_STAT = { channelId: 'TOTAL_STAT', connections: 0, queuedConnections: 0 }
+export default class WebsocketServerCoordinator {
+    TOTAL_STAT = { channelId: 'TOTAL_STAT', connections: 0, queuedConnections: 0 } as Channel;
     Cache = new Map<string, Channel>(
         [
-            [
-                'TOTAL_STAT',
-                this.TOTAL_STAT
-            ]
+            ['TOTAL_STAT', this.TOTAL_STAT]
         ]
     );
 
+    /** 코디네이터 초기화 메소드.
+     *  - 서비스 노드, 채널 노드 생성 
+     *  - 현재 public host 기반 서비스 임시 노드, 커넥션 정보 관련 임시 노드 생성
+     */
+    public static async initAsync() {
+        InitializeService(async () => {
+            const promises = [
+                coordinator.shell.mkdirp(`${CoordinatorPaths.SERVER_PATH}`),
+                coordinator.shell.mkdirp(`${CoordinatorPaths.CHANNEL_PATH}`),
+                coordinator.create(`${CoordinatorPaths.AVAILABLE_SERVERS(PUBLIC_HOSTNAME)}`, undefined, undefined, CreateMode.EPHEMERAL),
+                coordinator.create(`${CoordinatorPaths.CURRENT_TOTAL_CONNECTIONS(PUBLIC_HOSTNAME)}`, undefined, undefined, CreateMode.EPHEMERAL),
+                coordinator.create(`${CoordinatorPaths.CURRENT_TOTAL_QUEUED_CONNECTIONS(PUBLIC_HOSTNAME)}`, undefined, undefined, CreateMode.EPHEMERAL),
+            ]
+
+            await Promise.all(promises);
+        })
+
+    }
+    /** 코디네이터 서비스가 적절히 초기화되어있는 지 확인하는 메소드 */
     public async isInitAsync() {
         const got = await Promise.all([
             coordinator.exists(CoordinatorPaths.SERVER_PATH)
