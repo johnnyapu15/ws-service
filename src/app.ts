@@ -11,7 +11,7 @@ import { NODE_ENV, PORT, LOG_FORMAT, ORIGIN, CREDENTIALS, PUBLIC_HOSTNAME } from
 import { Routes } from '@interfaces/routes.interface';
 import errorMiddleware from '@middlewares/error.middleware';
 import { logger, stream } from '@utils/logger';
-import { coordinator, CoordinatorPaths, InitializeService } from './utils/coordinator';
+import { coordinator, CoordinatorPaths, CreateMode, InitializeService } from './utils/coordinator';
 import { promisify } from 'util';
 
 class App {
@@ -65,8 +65,9 @@ class App {
         const promises = [
           coordinator.shell.mkdirp(`${CoordinatorPaths.SERVER_PATH}`),
           coordinator.shell.mkdirp(`${CoordinatorPaths.CHANNEL_PATH}`),
-          coordinator.shell.mkdirp(`${CoordinatorPaths.CURRENT_TOTAL_CONNECTIONS(PUBLIC_HOSTNAME)}`),
-          coordinator.shell.mkdirp(`${CoordinatorPaths.CURRENT_TOTAL_QUEUED_CONNECTIONS(PUBLIC_HOSTNAME)}`),
+          coordinator.create(`${CoordinatorPaths.AVAILABLE_SERVERS(PUBLIC_HOSTNAME)}`, undefined, undefined, CreateMode.EPHEMERAL),
+          coordinator.create(`${CoordinatorPaths.CURRENT_TOTAL_CONNECTIONS(PUBLIC_HOSTNAME)}`, undefined, undefined, CreateMode.EPHEMERAL),
+          coordinator.create(`${CoordinatorPaths.CURRENT_TOTAL_QUEUED_CONNECTIONS(PUBLIC_HOSTNAME)}`, undefined, undefined, CreateMode.EPHEMERAL),
         ]
 
         await Promise.all(promises);
