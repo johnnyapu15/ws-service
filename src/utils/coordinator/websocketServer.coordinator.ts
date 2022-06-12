@@ -1,5 +1,5 @@
 import { PUBLIC_HOSTNAME } from "@/config";
-import { Channel, coordinator, CoordinatorPaths, CreateMode, ToBuffer, Ids, InitializeService } from "@/utils/coordinator";
+import { Channel, coordinator, CoordinatorPaths, CreateMode, ToBuffer, Ids, InitializeService } from "@/utils/coordinator/coordinator";
 
 export default class WebsocketServerCoordinator {
     TOTAL_STAT = { channelId: 'TOTAL_STAT', connections: 0, queuedConnections: 0 } as Channel;

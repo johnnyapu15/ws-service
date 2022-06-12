@@ -1,7 +1,7 @@
 
 import app from '../app'
 import WebsocketServerCoordinator from '../utils/websocketServer.coordinator';
-import { initiated } from '../utils/coordinator';
+import { initiated } from '../utils/coordinator/coordinator';
 const a = new app([])
 const service = new WebsocketServerCoordinator;
 

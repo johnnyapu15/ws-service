@@ -1,6 +1,6 @@
 import { COORDINATOR_CONNECTION, PUBLIC_HOSTNAME } from '@/config';
 import { promisify } from 'util';
-import { logger } from './logger';
+import { logger } from '../logger';
 import { createClient, CreateMode, Ids } from 'zk-client';
 const PREFIX = '/Coordinator/';
 
