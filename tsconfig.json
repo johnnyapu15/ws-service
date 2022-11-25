@@ -9,7 +9,6 @@
     "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
-    "module": "es2022",
     "pretty": true,
     "sourceMap": true,
     "declaration": true,

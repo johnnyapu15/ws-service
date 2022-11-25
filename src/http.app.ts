@@ -2,6 +2,7 @@ import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
+import { createServer, Server as HttpServer } from 'http';
 import helmet from 'helmet';
 import hpp from 'hpp';
 import morgan from 'morgan';
@@ -12,27 +13,27 @@ import { Routes } from '@interfaces/routes.interface';
 import errorMiddleware from '@middlewares/error.middleware';
 import { logger, stream } from '@utils/logger';
 
-import WebsocketServerCoordinator from './utils/websocketServer.coordinator';
-
-class App {
+class HttpApp {
   public app: express.Application;
+  public http: HttpServer;
   public env: string;
   public port: string | number;
 
+
   constructor(routes: Routes[]) {
     this.app = express();
+    this.http = createServer(this.app);
     this.env = NODE_ENV || 'development';
     this.port = PORT || 3000;
 
     this.initializeMiddlewares();
-    this.initializeCoordinator();
     this.initializeRoutes(routes);
     this.initializeSwagger();
     this.initializeErrorHandling();
   }
 
   public listen() {
-    this.app.listen(this.port, () => {
+    this.http.listen(this.port, () => {
       logger.info(`=================================`);
       logger.info(`======= ENV: ${this.env} =======`);
       logger.info(`🚀 App listening on the port ${this.port}`);
@@ -55,18 +56,9 @@ class App {
     this.app.use(cookieParser());
   }
 
-  private async initializeCoordinator() {
-    // init paths
-    try {
-      await WebsocketServerCoordinator.initAsync();
-    } catch (e) {
-      console.log(e)
-    }
-  }
-
   private initializeRoutes(routes: Routes[]) {
     routes.forEach(route => {
-      this.app.use('/', route.router);
+        this.app.use('/', route.router);
     });
   }
 
@@ -91,4 +83,4 @@ class App {
   }
 }
 
-export default App;
+export default HttpApp;
